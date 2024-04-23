@@ -8,10 +8,16 @@ python3 -m venv venv
 ```
 
 Activate the virtualenv:
-`source venv/bin/activate`
+```
+source venv/bin/activate
+```
 
 Install all the libraries:
-`pip install -r requirements.txt`
+```
+pip install -r requirements.txt
+```
 
 Run:
-`python3 __main__.py`
+```
+python3 __main__.py
+```
