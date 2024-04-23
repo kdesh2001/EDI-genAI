@@ -3,7 +3,9 @@
 Steps to run:
 
 Create virtualenv:
-`python3 -m venv venv`
+```
+python3 -m venv venv
+```
 
 Activate the virtualenv:
 `source venv/bin/activate`
