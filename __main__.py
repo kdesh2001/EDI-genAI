@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 import json
 import pprint
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
@@ -215,7 +215,13 @@ def create_pdf(transaction_set, version, segments, elements):
             c.drawString(480, 650 - (i + 1) * 20, e["MinimumLength"]+"/"+e["MaximumLength"])
             # c.drawString(550, 650 - (i + 1) * 20, e["Notes"])
         c.showPage()
+    summary = get_summary(agencies_description[agencies.index(agency)], version, tset, list(segments["SegmentID"].unique()))
+    style = getSampleStyleSheet()['Normal']
+    paragraph = Paragraph(summary, style)
 
+    # Draw the paragraph on the canvas
+    paragraph.wrapOn(c, inch * 6, inch * 6)
+    paragraph.drawOn(c, inch, inch * 6)
     # Save the PDF
     c.save()
     buffer.seek(0)
@@ -230,6 +236,21 @@ neo4j_password = 'x7lO8GKrglcmm4MYuHcBp_PJx23STanbAUKfnuj_FIg'
 # neo4j_uri = 'neo4j+s://6d01a70f.databases.neo4j.io'
 # neo4j_user = 'neo4j'
 # neo4j_password = 'qbAQwpVHaprehjHgapCW8zad2jMXeExqZ7GgpfW1tcE'
+
+
+def get_summary(agency, version, tset,  segmentIDs):
+    question = f'''
+    You are an expert in EDI. You have made an EDI spec document for a customer. Key details of that specifications are: {agency}, version {version}, transaction set is {tset}, segments are {str(segmentIDs)}. Now you are supposed to write a summary of this. That summary should be indicative of what the document contains and one line description of the agency, transaction set and each segment.
+    '''
+    output = ask_mixtral({
+        "inputs": question,
+        "parameters": {
+            "decoding_method": "greedy",
+            "min_new_tokens": 1,
+            "max_new_tokens": 200
+        }
+    })
+    return output[0]["generated_text"][len(question):]
 
 
 def get_versions(session, agency):
