@@ -127,6 +127,17 @@ def create_pdf(transaction_set, version, segments, elements):
     # Create a canvas object
     c = canvas.Canvas(buffer, pagesize=letter)
 
+    c.setFont("Helvetica", 10)
+    summary = get_summary(agencies_description[agencies.index(agency)], version, tset,
+                          list(segments["SegmentID"].unique()))
+    style = getSampleStyleSheet()['Normal']
+    paragraph = Paragraph(summary, style)
+
+    # Draw the paragraph on the canvas
+    paragraph.wrapOn(c, inch * 6, inch * 6)
+    paragraph.drawOn(c, inch, inch * 6)
+    c.showPage()
+
     # TransactionSet and Version
     c.setFont("Helvetica-Bold", 40)
     c.drawString(20, 740, transaction_set)
@@ -215,13 +226,7 @@ def create_pdf(transaction_set, version, segments, elements):
             c.drawString(480, 650 - (i + 1) * 20, e["MinimumLength"]+"/"+e["MaximumLength"])
             # c.drawString(550, 650 - (i + 1) * 20, e["Notes"])
         c.showPage()
-    summary = get_summary(agencies_description[agencies.index(agency)], version, tset, list(segments["SegmentID"].unique()))
-    style = getSampleStyleSheet()['Normal']
-    paragraph = Paragraph(summary, style)
 
-    # Draw the paragraph on the canvas
-    paragraph.wrapOn(c, inch * 6, inch * 6)
-    paragraph.drawOn(c, inch, inch * 6)
     # Save the PDF
     c.save()
     buffer.seek(0)
@@ -247,7 +252,7 @@ def get_summary(agency, version, tset,  segmentIDs):
         "parameters": {
             "decoding_method": "greedy",
             "min_new_tokens": 1,
-            "max_new_tokens": 200
+            "max_new_tokens": 600
         }
     })
     return output[0]["generated_text"][len(question):]
@@ -345,11 +350,17 @@ def get_info(session, agency, version, ts, segments, name, ftype='pdf'):
         seg_columns = ["Position", "SegmentID", "SegmentDescription", "Section", "RequirementDesignator", "MaximumUsage", "LoopID",
                        "Notes"]
         all_segments = pd.DataFrame(details["Segments"], columns=seg_columns)
+        all_segments = all_segments.drop_duplicates(['SegmentID']).reset_index()
+        all_segments.sort_values(by=["Position"], inplace=True, key=lambda x: pd.to_numeric(x, errors="coerce"))
+        for iii, s in all_segments.iterrows():
+            print(iii, s["Position"])
         all_segments.fillna("", inplace=True)
+        all_segments.reset_index(inplace=True)
         all_segments.replace("Undefined", "N/A", inplace=True)
         element_columns = ["ElementID", "SegmentID", "RequirementDesignator", "Description", "Type", "MinimumLength",
                            "MaximumLength", "Ref", "Notes"]
         all_elements = pd.DataFrame(details["Elements"], columns=element_columns)
+        all_elements = all_elements.drop_duplicates().reset_index()
         all_elements.fillna("", inplace=True)
         all_elements.replace("Undefined", "N/A", inplace=True)
         pdf_buffer = create_pdf(details["TransactionSet"]["TransactionSet"], details["Version"]["version"], all_segments, all_elements)
