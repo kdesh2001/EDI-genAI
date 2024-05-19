@@ -21,3 +21,13 @@ Run:
 ```
 python3 __main__.py
 ```
+Sample inputs:
+(In exact order)
+```
+user1
+pswd1
+X
+004020
+850
+N1, N3
+```
